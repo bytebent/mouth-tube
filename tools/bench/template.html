@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mouth-tube bench</title>
+<style>
+:root{
+  --platinum:#dcdce0; --platinum-hi:#ececef; --etch:#9c9ca4; --ink:#000; --ink-soft:#4a4a52; --inset:#f4f4f6; --desk:#b9b9c0;
+  --red:#e03a3e; --red-dk:#9e1f23; --blue:#009ddc; --blue-dk:#00699a; --purple:#963d97; --purple-dk:#6a2a6b; --graphite:#6e6e78;
+  --screen:#0b0b0e; --lcd:#8f8;
+  --ui:"Lucida Grande","Lucida Sans Unicode",Geneva,Verdana,sans-serif; --mono:Monaco,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(circle at 1px 1px, rgba(0,0,0,.09) 1px, transparent 1.5px) 0 0/6px 6px, var(--desk);
+  font:13px/1.45 var(--ui); color:var(--ink); padding:24px 16px 40px; -webkit-user-select:none; user-select:none}
+.window{max-width:960px;margin:0 auto;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.55) 0 1px, rgba(255,255,255,0) 1px 2px, rgba(0,0,0,.035) 2px 3px, rgba(0,0,0,0) 3px 4px), var(--platinum);
+  border:1px solid #7d7d86;border-radius:9px;box-shadow:0 1px 0 #fff inset, 0 12px 32px rgba(0,0,0,.22);overflow:hidden}
+.titlebar{display:flex;align-items:center;gap:10px;padding:7px 12px 6px;background:linear-gradient(#f6f6f8,#d6d6db);border-bottom:1px solid #8e8e96}
+.closebox{width:12px;height:12px;border:1px solid #6e6e78;border-radius:2px;background:linear-gradient(#fff,#cfcfd5);flex:none}
+.titlebar .lines{flex:1;height:9px;background:repeating-linear-gradient(0deg,#9c9ca4 0 1px,transparent 1px 3px);opacity:.6;min-width:12px}
+.titlebar .t{font-weight:700;font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.titlebar .arrow{color:var(--ink-soft);font-weight:400}
+.mark{width:20px;height:16px;border-radius:3px;background:var(--graphite);box-shadow:0 0 0 1px rgba(0,0,0,.35);position:relative;flex:none;overflow:hidden;display:inline-block}
+.mark::after{content:"";position:absolute;left:0;right:0;top:6px;height:4px;background:var(--red)}
+.mark.mouth::after{background:var(--purple)}
+.titlebar .ver{color:var(--ink-soft);font-size:11px;white-space:nowrap}
+.body{padding:14px 18px 16px}
+
+/* screen */
+.screen{background:var(--screen);border-radius:6px;padding:10px;box-shadow:0 0 0 1px #000,0 2px 6px rgba(0,0,0,.5) inset;position:relative}
+.views{display:grid;grid-template-columns:3fr 2fr;gap:10px}
+.view{position:relative}
+.view canvas{display:block;width:100%;height:220px;border-radius:3px;background:#060608}
+.view .lbl{position:absolute;left:8px;top:6px;font:10px/1 var(--mono);color:var(--lcd);opacity:.8;letter-spacing:1px;pointer-events:none}
+.readouts{display:flex;flex-wrap:wrap;gap:4px 18px;font:11px/1 var(--mono);color:var(--lcd);margin-top:8px;letter-spacing:1px}
+.readouts b{font-weight:400;opacity:.6;margin-right:6px}
+.readouts .gap{margin-left:auto}
+.power{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(11,11,14,.86);border-radius:6px;z-index:2}
+.power.hide{display:none}
+
+/* groups and knobs */
+.rows{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;align-items:stretch}
+fieldset{flex:1 1 auto;margin:0;border:1px solid var(--etch);border-radius:6px;padding:8px 12px 10px;background:rgba(236,236,239,.7);box-shadow:0 1px 0 #fff, inset 0 1px 0 #fff;min-width:0}
+legend{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:0 6px;display:flex;align-items:center;gap:6px}
+legend .dot{width:8px;height:8px;border-radius:50%;background:var(--graphite);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+legend .dot.p{background:var(--purple)}
+legend .dot.r{background:var(--red)}
+.knobs{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:space-around}
+.knob{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;width:62px}
+.dial{--a0:0deg;--a1:0deg;--c:var(--graphite);position:relative;width:44px;height:44px;border-radius:50%;cursor:ns-resize;touch-action:none;outline:none;
+  background:conic-gradient(from 225deg, #b9b9c0 0 var(--a0), var(--c) var(--a0) var(--a1), #b9b9c0 var(--a1) 270deg, transparent 270deg)}
+.dial::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--platinum-hi)}
+.dial .cap{position:absolute;inset:6px;border-radius:50%;
+  background:radial-gradient(circle at 50% 22%, rgba(255,255,255,.95) 0 18%, rgba(255,255,255,0) 46%), radial-gradient(circle at 50% 80%, #f7f7fa, #c8c8ce 60%, #9a9aa3);
+  box-shadow:0 2px 3px rgba(0,0,0,.35), 0 0 0 1px #7d7d86}
+.dial .ptr{position:absolute;inset:6px;border-radius:50%;pointer-events:none}
+.dial .ptr::after{content:"";position:absolute;left:50%;top:3px;width:3px;height:30%;margin-left:-1.5px;border-radius:2px;background:#1a1a1e}
+.dial .tick{position:absolute;left:50%;top:-4px;width:2px;height:6px;margin-left:-1px;background:var(--ink-soft);border-radius:1px;transform-origin:1px 26px;pointer-events:none}
+.dial:focus-visible{box-shadow:0 0 0 2px var(--blue)}
+.knob .name{font-weight:700;white-space:nowrap}
+.val{font:700 10.5px var(--ui);background:var(--inset);box-shadow:inset 0 1px 2px rgba(0,0,0,.25);border-radius:3px;padding:1px 6px;min-width:52px;text-align:center;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid #7d7d86;border-radius:999px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.seg button{font:700 11px var(--ui);border:0;padding:4px 12px;cursor:pointer;color:#222;background:linear-gradient(#fff,#d8d8dd 48%,#c4c4ca 52%,#e6e6ea)}
+.seg button+button{border-left:1px solid #9c9ca4}
+.seg button[aria-pressed="true"]{color:#fff;text-shadow:0 -1px 0 rgba(0,0,0,.3);background:linear-gradient(#8fd8f7,var(--blue) 48%,#0086c0 52%,#38b8ea)}
+.segwrap{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:700;padding-bottom:4px}
+
+.gel{display:inline-flex;align-items:center;gap:6px;padding:6px 18px;border-radius:999px;font:700 12px var(--ui);color:#fff;border:1px solid var(--blue-dk);position:relative;cursor:pointer;
+  background:linear-gradient(#8fd8f7,var(--blue) 48%,#0086c0 52%,#38b8ea);box-shadow:0 2px 4px rgba(0,0,0,.3), 0 1px 0 rgba(255,255,255,.5) inset;text-shadow:0 -1px 0 rgba(0,0,0,.3)}
+.gel::before{content:"";position:absolute;left:10px;right:10px;top:2px;height:45%;border-radius:999px;background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.1));pointer-events:none}
+.gel.grey{color:#222;border-color:#7d7d86;text-shadow:0 1px 0 #fff;background:linear-gradient(#fff,#d8d8dd 48%,#c4c4ca 52%,#e6e6ea)}
+.gel.red{border-color:var(--red-dk);background:linear-gradient(#f7a4a6,var(--red) 48%,#c42a2e 52%,#ee6a6d)}
+.gel:disabled{opacity:.5;cursor:default}
+.gel:focus-visible,.seg button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* tongue pad */
+.padpanel{flex:0 0 auto;background:var(--platinum-hi);border:1px solid var(--etch);border-radius:6px;box-shadow:0 1px 0 #fff, inset 0 1px 0 #fff;padding:8px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.padpanel .hd{align-self:stretch;display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px}
+.padpanel .hd .dot{width:8px;height:8px;border-radius:50%;background:var(--purple);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+#pad{display:block;width:260px;height:auto;touch-action:none;cursor:crosshair;outline:none;border-radius:4px}
+#pad:focus-visible{box-shadow:0 0 0 2px var(--blue)}
+#pad .face{fill:var(--inset);stroke:#7d7d86;stroke-width:1.2}
+#pad .grid{stroke:#c4c4ca;stroke-width:1;fill:none}
+#pad .v{font:12px var(--ui);fill:#8a8a93;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+#pad .ax{font:700 8.5px var(--ui);fill:var(--ink-soft);letter-spacing:.8px;text-anchor:middle;pointer-events:none}
+.padval{display:flex;gap:8px}
+.mouthctl{flex:1 1 420px;display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start}
+
+/* input bar */
+.inputbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:12px;padding:8px 12px;border:1px solid var(--etch);border-radius:6px;background:rgba(236,236,239,.7);box-shadow:0 1px 0 #fff, inset 0 1px 0 #fff}
+.inputbar .lab{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px}
+.fname{font:11px var(--mono);background:var(--inset);box-shadow:inset 0 1px 2px rgba(0,0,0,.25);border-radius:3px;padding:3px 8px;min-width:180px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft)}
+.tri{width:0;height:0;border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent;filter:drop-shadow(0 -1px 0 rgba(0,0,0,.3))}
+.sq{width:9px;height:9px;background:#fff;border-radius:1px}
+
+.err{display:none;margin-top:10px;padding:8px 10px;border-left:4px solid var(--red);background:#fdeced;font-size:12px}
+@media (max-width:760px){ .views{grid-template-columns:1fr} #pad{width:220px} .fname{min-width:120px} }
+</style>
+</head>
+<body>
+<div class="window" role="application" aria-label="mouth-tube test bench">
+  <div class="titlebar"><span class="closebox"></span><span class="lines"></span>
+    <span class="t"><span class="mark mouth" aria-hidden="true"></span>mouth-tube</span>
+    <span class="lines"></span><span class="ver">bench v0.1 · Bytebent Audio</span></div>
+  <div class="body">
+    <div class="screen">
+      <div class="views">
+        <div class="view"><canvas id="tract" aria-label="Vocal tract shape, side view and tube sections"></canvas><span class="lbl">TRACT</span></div>
+        <div class="view"><canvas id="spec" aria-label="Output spectrum with the tract's response and formants"></canvas><span class="lbl" style="left:auto;right:8px">SPECTRUM</span></div>
+      </div>
+      <div class="readouts" aria-live="off">
+        <span><b>F1</b><span id="roF1">—</span></span>
+        <span><b>F2</b><span id="roF2">—</span></span>
+        <span><b>F3</b><span id="roF3">—</span></span>
+        <span><b>LEN</b><span id="roLen">—</span></span>
+      </div>
+      <div class="power" id="power">
+        <button class="gel red" id="powerBtn" type="button">Power on</button>
+      </div>
+    </div>
+
+    <div class="rows">
+      <div class="padpanel">
+        <div class="hd"><span class="dot"></span>Tongue position</div>
+        <svg id="pad" viewBox="0 0 260 186" tabindex="0" role="slider" aria-label="Tongue position: front to back and close to open" aria-roledescription="2D slider">
+          <defs>
+            <radialGradient id="gloss" cx="50%" cy="78%" r="70%">
+              <stop offset="0" stop-color="#d79ad8"/><stop offset=".55" stop-color="#963d97"/><stop offset="1" stop-color="#5e235f"/>
+            </radialGradient>
+            <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/>
+            </linearGradient>
+          </defs>
+          <g id="padStatic"></g>
+          <g id="padDot" pointer-events="none">
+            <circle r="11" fill="rgba(0,0,0,.25)" cx="0" cy="2"/>
+            <circle r="10" fill="url(#gloss)" stroke="#4d1c4e" stroke-width="1"/>
+            <ellipse rx="6" ry="3.6" cy="-4.2" fill="url(#shine)"/>
+          </g>
+        </svg>
+        <div class="padval"><span class="val" id="padX">Front 55%</span><span class="val" id="padY">Open 70%</span></div>
+      </div>
+      <div class="mouthctl">
+        <fieldset><legend><span class="dot p"></span>Tongue</legend><div class="knobs" id="g-tongue"></div></fieldset>
+        <fieldset><legend><span class="dot p"></span>Jaw</legend><div class="knobs" id="g-jaw"></div></fieldset>
+        <fieldset><legend><span class="dot p"></span>Lips</legend><div class="knobs" id="g-lips"></div></fieldset>
+        <fieldset><legend><span class="dot"></span>Velum</legend><div class="knobs" id="g-velum"></div></fieldset>
+        <fieldset><legend><span class="dot"></span>Tract</legend><div class="knobs" id="g-tract"></div></fieldset>
+        <fieldset><legend><span class="dot"></span>Output</legend><div class="knobs" id="g-mout">
+          <div class="segwrap">Radiation<div class="seg" id="segRad"><button type="button" data-v="1">On</button><button type="button" data-v="0">Off</button></div></div>
+        </div></fieldset>
+      </div>
+    </div>
+
+    <div class="inputbar">
+      <span class="lab">Input</span>
+      <button class="gel grey" id="loadBtn" type="button">Load file…</button>
+      <span class="fname" id="fname">No file loaded</span>
+      <button class="gel" id="playBtn" type="button" disabled><span class="tri" id="playIcon"></span><span id="playTxt">Play</span></button>
+      <input type="file" id="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden>
+    </div>
+
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<script type="text/plain" id="dsp">
+/*__DSP__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  const P = 'var(--purple)';
+  const pct = v => Math.round(v * 100) + '%';
+  const db = v => { const r = Math.round(v * 10) / 10; return (r > 0 ? '+' : '') + r.toFixed(1) + ' dB'; };
+
+  /* ---------- parameter specs (ranges match reference/mouth-tube.js) ---------- */
+  const SPECS = [
+    // mouth-tube
+    { k: 'm', g: 'g-tongue', id: 'tip', name: 'Tip', min: 0, max: 1, def: 0, fmt: pct, c: P },
+    { k: 'm', g: 'g-jaw', id: 'jaw', name: 'Open', min: 0, max: 1, def: 0.3, fmt: pct, c: P },
+    { k: 'm', g: 'g-lips', id: 'lips', name: 'Opening', min: 0, max: 1, def: 0.6, fmt: v => v < 0.005 ? 'Closed' : pct(v), c: P },
+    { k: 'm', g: 'g-lips', id: 'round', name: 'Round', min: 0, max: 1, def: 0, fmt: pct, c: P },
+    { k: 'm', g: 'g-velum', id: 'nasal', name: 'Nasal', min: 0, max: 1, def: 0, fmt: v => v < 0.005 ? 'Closed' : pct(v) },
+    { k: 'm', g: 'g-tract', id: 'length', name: 'Length', min: 7, max: 35, def: 17, log: true, ticks: [10, 19], fmt: v => v.toFixed(1) + ' cm', title: 'Marks show the human range, about 10–19 cm' },
+    { k: 'm', g: 'g-tract', id: 'damping', name: 'Damping', min: 0, max: 1, def: 0.5, fmt: pct },
+    { k: 'm', g: 'g-mout', id: 'spread', name: 'Spread', min: 0, max: 1, def: 0, fmt: pct },
+    { k: 'm', g: 'g-mout', id: 'mix', name: 'Mix', min: 0, max: 1, def: 1, fmt: pct },
+    { k: 'm', g: 'g-mout', id: 'output', name: 'Output', min: -24, max: 12, def: 0, fmt: db },
+  ];
+  const PAD_DEF = { x: 0.55, y: 0.7 };
+
+  /* ---------- audio ---------- */
+  let ctx = null, node = null, analyser = null, ready = false, starting = null;
+  const state = {};            // current values by id
+  const queue = [];
+  let noseD = null, velumIdx = 16;
+  function send(msg) { if (ready) node.port.postMessage(msg); else queue.push(msg); }
+  function showError(t) { const e = document.getElementById('err'); e.style.display = 'block'; e.textContent = t; }
+
+  function start() {
+    if (starting) return starting;
+    starting = (async () => {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        ctx = new AC({ latencyHint: 'interactive' });
+        if (!ctx.audioWorklet) throw new Error('This browser has no AudioWorklet support. Try a current Chrome, Edge, Firefox or Safari.');
+        const src = document.getElementById('dsp').textContent;
+        // file:// pages can't load blob: worklets in Chromium, http(s) pages may refuse data: in some browsers: try both
+        const blobUrl = () => URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+        const dataUrl = () => 'data:application/javascript;charset=utf-8,' + encodeURIComponent(src);
+        const tries = location.protocol === 'file:' ? [dataUrl, blobUrl] : [blobUrl, dataUrl];
+        let loaded = false, lastErr = null;
+        for (const mk of tries) { try { await ctx.audioWorklet.addModule(mk()); loaded = true; break; } catch (err) { lastErr = err; } }
+        if (!loaded) throw lastErr;
+        node = new AudioWorkletNode(ctx, 'mouth-tube-processor', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
+        analyser = ctx.createAnalyser(); analyser.fftSize = 8192; analyser.smoothingTimeConstant = 0.55;
+        analyser.minDecibels = -110; analyser.maxDecibels = -10;
+        node.connect(analyser); analyser.connect(ctx.destination);
+        node.port.onmessage = onMsg;
+        node.onprocessorerror = () => showError('The audio engine stopped with an error. Reload the page.');
+        ready = true;
+        for (const s of SPECS) node.port.postMessage({ t: s.k, id: s.id, v: state[s.id] });
+        node.port.postMessage({ t: 'm', id: 'tongueX', v: state.tongueX });
+        node.port.postMessage({ t: 'm', id: 'tongueY', v: state.tongueY });
+        node.port.postMessage({ t: 'm', id: 'radiation', v: state.radiation });
+        node.port.postMessage({ t: 'snap' });
+        while (queue.length) node.port.postMessage(queue.shift());
+        if (ctx.state !== 'running') await ctx.resume();
+        document.getElementById('power').classList.add('hide');
+      } catch (err) { showError('Audio could not start: ' + (err && err.message || err)); starting = null; }
+    })();
+    return starting;
+  }
+  document.getElementById('powerBtn').addEventListener('click', start);
+
+  /* ---------- knobs ---------- */
+  const knobs = {};
+  function toNorm(s, v) {
+    if (s.log) return Math.log(v / s.min) / Math.log(s.max / s.min);
+    const n = (v - s.min) / (s.max - s.min);
+    return s.curve ? Math.pow(n, 1 / s.curve) : n;
+  }
+  function fromNorm(s, n) {
+    n = Math.min(1, Math.max(0, n));
+    let v = s.log ? s.min * Math.pow(s.max / s.min, n) : s.min + (s.max - s.min) * (s.curve ? Math.pow(n, s.curve) : n);
+    if (s.step) v = Math.round(v / s.step) * s.step;
+    return v;
+  }
+  function makeKnob(s) {
+    const el = document.createElement('div');
+    el.className = 'knob' + (s.sm ? ' sm' : '');
+    el.innerHTML = '<div class="dial" tabindex="0" role="slider"><div class="cap"></div><div class="ptr"></div></div><span class="name"></span><span class="val"></span>';
+    const dial = el.firstChild, valEl = el.lastChild;
+    el.children[1].textContent = s.name;
+    dial.setAttribute('aria-label', s.name);
+    if (s.title) el.title = s.title;
+    if (s.c) dial.style.setProperty('--c', s.c);
+    if (s.ticks) for (const t of s.ticks) {
+      const tk = document.createElement('span'); tk.className = 'tick';
+      tk.style.transform = 'rotate(' + (-135 + toNorm(s, t) * 270) + 'deg)';
+      dial.appendChild(tk);
+    }
+    const host = document.getElementById(s.g);
+    const seg = host.querySelector('.segwrap');
+    if (seg && s.id !== 'volume') host.insertBefore(el, seg); else host.appendChild(el);
+    const k = { s, dial, valEl, norm: toNorm(s, s.def) };
+    k.set = (n, quiet) => {
+      k.norm = Math.min(1, Math.max(0, n));
+      const v = fromNorm(s, k.norm);
+      if (s.step) k.norm = toNorm(s, v);
+      state[s.id] = v;
+      const nn = k.norm;
+      let a0 = 0, a1 = nn;
+      if (s.bipolar) { a0 = Math.min(nn, 0.5); a1 = Math.max(nn, 0.5); }
+      dial.style.setProperty('--a0', (a0 * 270) + 'deg');
+      dial.style.setProperty('--a1', (a1 * 270) + 'deg');
+      dial.querySelector('.ptr').style.transform = 'rotate(' + (-135 + nn * 270) + 'deg)';
+      const txt = s.fmt(v);
+      valEl.textContent = txt;
+      dial.setAttribute('aria-valuenow', v.toFixed(3));
+      dial.setAttribute('aria-valuetext', txt);
+      if (!quiet) send({ t: s.k, id: s.id, v });
+    };
+    let dragY = null, startN = 0;
+    dial.addEventListener('pointerdown', e => { dial.setPointerCapture(e.pointerId); dragY = e.clientY; startN = k.norm; dial.focus(); e.preventDefault(); });
+    dial.addEventListener('pointermove', e => {
+      if (dragY === null) return;
+      const d = (dragY - e.clientY) * (e.shiftKey ? 0.0008 : 0.005);
+      k.set(startN + d);
+      if (e.shiftKey) { dragY = e.clientY; startN = k.norm; }
+    });
+    const end = () => { dragY = null; };
+    dial.addEventListener('pointerup', end); dial.addEventListener('pointercancel', end);
+    dial.addEventListener('dblclick', () => k.set(toNorm(s, s.def)));
+    dial.addEventListener('wheel', e => { e.preventDefault(); k.set(k.norm - Math.sign(e.deltaY) * (e.shiftKey ? 0.005 : 0.03)); }, { passive: false });
+    dial.addEventListener('keydown', e => {
+      const st = s.step ? 1 / ((s.max - s.min) / s.step) : (e.shiftKey ? 0.005 : 0.02);
+      let used = true;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') k.set(k.norm + st);
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') k.set(k.norm - st);
+      else if (e.key === 'Home') k.set(0);
+      else if (e.key === 'End') k.set(1);
+      else used = false;
+      if (used) { e.preventDefault(); e.stopPropagation(); }
+    });
+    k.set(k.norm, true);
+    knobs[s.id] = k;
+  }
+  SPECS.forEach(makeKnob);
+
+  function makeSeg(id, param, def, kind, after) {
+    const seg = document.getElementById(id), btns = [...seg.querySelectorAll('button')];
+    const set = v => { state[param] = v; btns.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === v))); };
+    btns.forEach(b => b.addEventListener('click', () => {
+      const v = +b.dataset.v; set(v);
+      if (kind) send({ t: kind, id: param, v });
+      if (after) after(v);
+    }));
+    set(def);
+    return set;
+  }
+  makeSeg('segRad', 'radiation', 1, 'm');
+
+  /* ---------- tongue pad (IPA vowel chart) ---------- */
+  const pad = document.getElementById('pad'), padDot = document.getElementById('padDot');
+  const PT = 26, PB = 168, PL = 30, PR = 238, PBL = PL + (PR - PL) * 0.5;   // trapezoid: top 30..238, bottom 134..238
+  const leftAt = Y => PL + (PBL - PL) * Y;
+  const toXY = (X, Y) => [leftAt(Y) + X * (PR - leftAt(Y)), PT + Y * (PB - PT)];
+  (function drawPad() {
+    const g = document.getElementById('padStatic'), ns = 'http://www.w3.org/2000/svg';
+    const add = (tag, attrs, text) => { const e = document.createElementNS(ns, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); if (text) e.textContent = text; g.appendChild(e); return e; };
+    const pts = [toXY(0, 0), toXY(1, 0), toXY(1, 1), toXY(0, 1)];
+    add('polygon', { class: 'face', points: pts.map(p => p.join(',')).join(' ') });
+    for (const y of [1 / 3, 2 / 3]) { const a = toXY(0, y), b = toXY(1, y); add('line', { class: 'grid', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); }
+    { const a = toXY(0.5, 0), b = toXY(0.5, 1); add('line', { class: 'grid', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); }
+    const V = [
+      [0, 0, 'i', 'y'], [0.5, 0, 'ɨ', 'ʉ'], [1, 0, 'ɯ', 'u'],
+      [0.24, 0.15, 'ɪ', 'ʏ'], [0.78, 0.15, '', 'ʊ'],
+      [0, 1 / 3, 'e', 'ø'], [0.5, 1 / 3, 'ɘ', 'ɵ'], [1, 1 / 3, 'ɤ', 'o'],
+      [0.5, 0.5, 'ə', ''],
+      [0, 2 / 3, 'ɛ', 'œ'], [0.5, 2 / 3, 'ɜ', 'ɞ'], [1, 2 / 3, 'ʌ', 'ɔ'],
+      [0.02, 0.84, 'æ', ''], [0.5, 0.84, 'ɐ', ''],
+      [0, 1, 'a', 'ɶ'], [1, 1, 'ɑ', 'ɒ'],
+    ];
+    for (const [x, y, u, r] of V) {
+      const [px, py] = toXY(x, y);
+      if (u && r) { add('text', { class: 'v', x: px - 8, y: py }, u); add('text', { class: 'v', x: px + 8, y: py }, r); }
+      else if (u) add('text', { class: 'v', x: px, y: py }, u);
+      else add('text', { class: 'v', x: px + 8, y: py }, r);
+    }
+    add('text', { class: 'ax', x: PL + 8, y: 12 }, 'FRONT');
+    add('text', { class: 'ax', x: (PL + PR) / 2, y: 12 }, 'CENTRAL');
+    add('text', { class: 'ax', x: PR - 6, y: 12 }, 'BACK');
+    add('text', { class: 'ax', x: (PL + PR) / 2 + 30, y: 182 }, 'OPEN');
+    add('text', { class: 'ax', x: 14, y: PT + 2, transform: `rotate(-90 14 ${PT + 2})`, 'text-anchor': 'end' }, 'CLOSE');
+  })();
+  function setPad(X, Y, quiet) {
+    X = Math.min(1, Math.max(0, X)); Y = Math.min(1, Math.max(0, Y));
+    state.tongueX = X; state.tongueY = Y;
+    const [px, py] = toXY(X, Y);
+    padDot.setAttribute('transform', `translate(${px.toFixed(1)} ${py.toFixed(1)})`);
+    const fx = X < 0.5 ? 'Front ' + Math.round((1 - X) * 200 - 100) + '%' : X > 0.5 ? 'Back ' + Math.round(X * 200 - 100) + '%' : 'Central';
+    const fy = Y < 0.5 ? 'Close ' + Math.round((1 - Y) * 200 - 100) + '%' : Y > 0.5 ? 'Open ' + Math.round(Y * 200 - 100) + '%' : 'Mid';
+    document.getElementById('padX').textContent = fx;
+    document.getElementById('padY').textContent = fy;
+    pad.setAttribute('aria-valuetext', fx + ', ' + fy);
+    if (!quiet) { send({ t: 'm', id: 'tongueX', v: X }); send({ t: 'm', id: 'tongueY', v: Y }); }
+  }
+  function padFromEvent(e) {
+    const r = pad.getBoundingClientRect(), vb = pad.viewBox.baseVal;
+    const sx = (e.clientX - r.left) / r.width * vb.width, sy = (e.clientY - r.top) / r.height * vb.height;
+    const Y = Math.min(1, Math.max(0, (sy - PT) / (PB - PT)));
+    const l = leftAt(Y);
+    setPad((sx - l) / (PR - l), Y);
+  }
+  let padDrag = false;
+  pad.addEventListener('pointerdown', e => { pad.setPointerCapture(e.pointerId); padDrag = true; pad.focus(); padFromEvent(e); e.preventDefault(); });
+  pad.addEventListener('pointermove', e => { if (padDrag) padFromEvent(e); });
+  const padEnd = () => { padDrag = false; };
+  pad.addEventListener('pointerup', padEnd); pad.addEventListener('pointercancel', padEnd);
+  pad.addEventListener('dblclick', () => setPad(PAD_DEF.x, PAD_DEF.y));
+  pad.addEventListener('keydown', e => {
+    const st = e.shiftKey ? 0.005 : 0.03;
+    let X = state.tongueX, Y = state.tongueY, used = true;
+    if (e.key === 'ArrowLeft') X -= st; else if (e.key === 'ArrowRight') X += st;
+    else if (e.key === 'ArrowUp') Y -= st; else if (e.key === 'ArrowDown') Y += st;
+    else used = false;
+    if (used) { e.preventDefault(); e.stopPropagation(); setPad(X, Y); }
+  });
+  setPad(PAD_DEF.x, PAD_DEF.y, true);
+
+  /* ---------- input: an audio file, played once ---------- */
+  let fileBuf = null, player = null;
+  const fileIn = document.getElementById('file'), playBtn = document.getElementById('playBtn');
+  document.getElementById('loadBtn').addEventListener('click', () => fileIn.click());
+  fileIn.addEventListener('change', async () => {
+    const f = fileIn.files && fileIn.files[0];
+    fileIn.value = '';
+    if (!f) return;
+    await start();
+    if (!ctx) return;
+    try {
+      const data = await f.arrayBuffer();
+      const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(data, res, rej); if (p && p.catch) p.catch(rej); });
+      stopFile();
+      fileBuf = buf;
+      document.getElementById('fname').textContent = f.name + ' · ' + buf.duration.toFixed(1) + ' s · ' + (buf.numberOfChannels > 1 ? 'stereo' : 'mono');
+      document.getElementById('fname').title = f.name;
+      playBtn.disabled = false;
+    } catch (err) { showError('Could not read that file as audio: ' + (err && err.message || err)); }
+  });
+  function setPlayUi(playing) {
+    document.getElementById('playIcon').className = playing ? 'sq' : 'tri';
+    document.getElementById('playTxt').textContent = playing ? 'Stop' : 'Play';
+  }
+  function stopFile() {
+    if (player) { const p = player; player = null; p.onended = null; try { p.stop(); } catch (e) {} p.disconnect(); }
+    setPlayUi(false);
+  }
+  playBtn.addEventListener('click', async () => {
+    if (player) { stopFile(); return; }
+    if (!fileBuf) return;
+    await start();
+    if (!ready) return;
+    const p = ctx.createBufferSource();
+    p.buffer = fileBuf;
+    p.connect(node);
+    p.onended = () => { if (player === p) { player = null; p.disconnect(); setPlayUi(false); } };
+    player = p;
+    p.start();
+    setPlayUi(true);
+  });
+
+  /* ---------- tract response (for the spectrum overlay and formant readouts) ---------- */
+  const NF = 260, FMIN = 50, FMAX = 16000;
+  const FREQS = new Float64Array(NF); for (let i = 0; i < NF; i++) FREQS[i] = FMIN * Math.pow(FMAX / FMIN, i / (NF - 1));
+  const RESP = new Float64Array(NF);
+  // chain matrices: glottis → velum, nose as a side branch, velum → lips; lips and nostrils as open ends
+  function response(d, len, nasalArea, B, rad) {
+    const N = d.length, l = len / N, c = 350, vi = velumIdx;
+    const nN = noseD ? noseD.length : 0, nl = l;
+    let peaksF = [];
+    for (let fi = 0; fi < NF; fi++) {
+      const f = FREQS[fi], kr = 2 * Math.PI * f / c, ki = -Math.PI * B / c;
+      const mats = (ds, from, to, areaFn, ll) => {
+        const a = kr * ll, b = ki * ll;
+        const cr = Math.cos(a) * Math.cosh(b), ci = -Math.sin(a) * Math.sinh(b), sr = Math.sin(a) * Math.cosh(b), si = Math.cos(a) * Math.sinh(b);
+        let m11r = 1, m11i = 0, m12r = 0, m12i = 0, m21r = 0, m21i = 0, m22r = 1, m22i = 0;
+        for (let i = from; i < to; i++) {
+          const A = Math.max(areaFn(i), 1e-6), Z = 1 / A;
+          const br = -Z * si, bi = Z * sr, er = -si / Z, ei = sr / Z;
+          const n11r = m11r * cr - m11i * ci + m12r * er - m12i * ei, n11i = m11r * ci + m11i * cr + m12r * ei + m12i * er;
+          const n12r = m11r * br - m11i * bi + m12r * cr - m12i * ci, n12i = m11r * bi + m11i * br + m12r * ci + m12i * cr;
+          const n21r = m21r * cr - m21i * ci + m22r * er - m22i * ei, n21i = m21r * ci + m21i * cr + m22r * ei + m22i * er;
+          const n22r = m21r * br - m21i * bi + m22r * cr - m22i * ci, n22i = m21r * bi + m21i * br + m22r * ci + m22i * cr;
+          m11r = n11r; m11i = n11i; m12r = n12r; m12i = n12i; m21r = n21r; m21i = n21i; m22r = n22r; m22i = n22i;
+        }
+        return [m11r, m11i, m12r, m12i, m21r, m21i, m22r, m22i];
+      };
+      const oral = i => d[i] * d[i];
+      const M1 = mats(d, 0, vi, oral, l), M2 = mats(d, vi, N, oral, l);
+      // nose input admittance Yn = Mn22 / Mn12 (nostril open)
+      let Ynr = 0, Yni = 0, Mn22r = 1, Mn22i = 0;
+      if (nasalArea > 1e-4 && nN) {
+        const Mn = mats(null, 0, nN, i => i === 0 ? nasalArea : noseD[i] * noseD[i], nl);
+        const den = Mn[2] * Mn[2] + Mn[3] * Mn[3];
+        Ynr = (Mn[6] * Mn[2] + Mn[7] * Mn[3]) / den; Yni = (Mn[7] * Mn[2] - Mn[6] * Mn[3]) / den;
+        Mn22r = Mn[6]; Mn22i = Mn[7];
+      }
+      // total M = M1 · [[1,0],[Yn,1]] · M2 ; we need M22 = M1_21·M2_12 + M1_22·(Yn·M2_12 + M2_22)
+      const [, , , , a21r, a21i, a22r, a22i] = M1;
+      const [, , b12r, b12i, , , b22r, b22i] = M2;
+      const yb12r = Ynr * b12r - Yni * b12i, yb12i = Ynr * b12i + Yni * b12r;
+      const tr = yb12r + b22r, ti = yb12i + b22i;
+      const M22r = a21r * b12r - a21i * b12i + a22r * tr - a22i * ti;
+      const M22i = a21r * b12i + a21i * b12r + a22r * ti + a22i * tr;
+      // lips + nostrils: U_total / U_glottis = (1 + Yn·M2_12 / Mn22) / M22
+      let numr = 1, numi = 0;
+      if (Ynr || Yni) {
+        const dd = Mn22r * Mn22r + Mn22i * Mn22i;
+        numr += (yb12r * Mn22r + yb12i * Mn22i) / dd; numi += (yb12i * Mn22r - yb12r * Mn22i) / dd;
+      }
+      const mag2 = (numr * numr + numi * numi) / (M22r * M22r + M22i * M22i + 1e-30);
+      let v = 10 * Math.log10(mag2 + 1e-30);
+      if (rad) v += 20 * Math.log10(f / 1000);
+      RESP[fi] = v;
+    }
+    for (let i = 1; i < NF - 1 && peaksF.length < 3; i++) if (RESP[i] > RESP[i - 1] && RESP[i] >= RESP[i + 1] && FREQS[i] < 5500) {
+      // parabolic refinement in log-frequency
+      const a = RESP[i - 1], b = RESP[i], cc = RESP[i + 1], den = a - 2 * b + cc;
+      const off = den !== 0 ? 0.5 * (a - cc) / den : 0;
+      peaksF.push(FMIN * Math.pow(FMAX / FMIN, (i + off) / (NF - 1)));
+    }
+    return peaksF;
+  }
+
+  /* ---------- live view ---------- */
+  const tractC = document.getElementById('tract'), specC = document.getElementById('spec');
+  const tx = tractC.getContext('2d'), sx = specC.getContext('2d');
+  let viz = null, formants = [];
+  const ro = { f1: document.getElementById('roF1'), f2: document.getElementById('roF2'), f3: document.getElementById('roF3'), len: document.getElementById('roLen') };
+  function onMsg(e) {
+    const m = e.data;
+    if (m.t === 'ready') { noseD = m.nose; velumIdx = m.velum; }
+    else if (m.t === 'viz') {
+      viz = m;
+      const B = 12 * Math.pow(25, state.damping);
+      formants = response(m.d, m.len, m.nasal, B, false);
+      const fmt = f => f ? Math.round(f) + ' Hz' : '—';
+      ro.f1.textContent = fmt(formants[0]); ro.f2.textContent = fmt(formants[1]); ro.f3.textContent = fmt(formants[2]);
+      ro.len.textContent = (m.len * 100).toFixed(1) + ' cm';
+    }
+  }
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    const w = Math.round(r.width * d), h = Math.round(r.height * d);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return d;
+  }
+
+  // Tract view: a side view drawn as LCD dots. The outer wall (back of the throat, palate) stays put; the tongue side
+  // sits one diameter away from it, so tongue, jaw and lips move as the tube changes. Each dot is tested exactly
+  // against the regions, so colours meet without gaps. Redrawn only when a new shape arrives.
+  const DW = 540, DH = 220;                                  // design space
+  const GEO = { gx: 118, gy: 142, roof: 62, R: 46, lipx: 452, kd: 15 }, PAL = 7;
+  const PURPLE_HI = '#d68bd7', LCDC = 'rgba(143,255,136,.55)';
+  function bentWalls(d, round) {
+    const { gx, gy, roof, R, lipx, kd } = GEO, bcx = gx + R, bcy = roof + R;
+    const straight = gy - bcy, arc = Math.PI * R / 2, oral = lipx - bcx, total = straight + arc + oral;
+    const wall = sv => { const a = sv * total;
+      if (a < straight) return [gx, gy - a, 1, 0];
+      if (a < straight + arc) { const t = (a - straight) / R; return [bcx - R * Math.cos(t), bcy - R * Math.sin(t), Math.cos(t), Math.sin(t)]; }
+      return [bcx + a - straight - arc, roof, 0, 1]; };
+    const N = d.length, outer = [], inner = [], nrm = [];
+    for (let i = 0; i <= N; i++) {
+      const di = i === 0 ? d[0] : i === N ? d[N - 1] : 0.5 * (d[i - 1] + d[i]);
+      const [x, y, nx, ny] = wall(i / N); outer.push([x, y]); inner.push([x + nx * di * kd, y + ny * di * kd]); nrm.push([nx, ny]);
+    }
+    const prot = round * 10; outer[N][0] += prot; inner[N][0] += prot; outer[N - 1][0] += prot / 2; inner[N - 1][0] += prot / 2;
+    let mi = 0; for (let i = 1; i < N; i++) if (d[i] < d[mi]) mi = i;
+    return { outer, inner, nrm, mi, N };
+  }
+  const tractBuf = document.createElement('canvas'), hit = document.createElement('canvas').getContext('2d');
+  let tractFor = null, tractScale = 0;
+  function renderTract(d, nasal, round, sc) {
+    const vOpen = Math.min(1, Math.sqrt(nasal));
+    tractBuf.width = Math.round(DW * sc); tractBuf.height = Math.round(DH * sc);
+    const g = tractBuf.getContext('2d'); g.setTransform(sc, 0, 0, sc, 0, 0);
+    const { outer, inner, nrm, mi, N } = bentWalls(d, round), vi = velumIdx, roof = GEO.roof, lip = outer[N];
+    const tissue = new Path2D();
+    for (let i = 0; i <= N; i++) tissue.lineTo(outer[i][0], outer[i][1]);
+    for (let i = N; i >= 0; i--) { const t = nrm[i][1] > 0.5 ? PAL : 9; tissue.lineTo(outer[i][0] - nrm[i][0] * t, outer[i][1] - nrm[i][1] * t); }
+    tissue.closePath();
+    const tongue = new Path2D();
+    inner.forEach((p, i) => i ? tongue.lineTo(p[0], p[1]) : tongue.moveTo(p[0], p[1]));
+    tongue.lineTo(inner[N][0], 200); tongue.lineTo(inner[0][0], 200); tongue.closePath();
+    const air = new Path2D();
+    outer.forEach((p, i) => i ? air.lineTo(p[0], p[1]) : air.moveTo(p[0], p[1]));
+    for (let i = N; i >= 0; i--) air.lineTo(inner[i][0], inner[i][1]);
+    air.closePath();
+    const [vx, vy] = outer[vi], fl = roof - PAL;
+    const nose = new Path2D();
+    nose.moveTo(vx - 6, vy - 10);
+    nose.bezierCurveTo(vx - 14, fl - 34, vx + 6, 10, vx + 44, 8);
+    nose.bezierCurveTo(lip[0] - 120, 4, lip[0] - 50, 8, lip[0] - 18, 22);
+    nose.lineTo(lip[0] + 22, fl - 12);
+    nose.quadraticCurveTo(lip[0] + 26, fl - 3, lip[0] + 14, fl);
+    nose.lineTo(vx + 26, fl);
+    nose.quadraticCurveTo(vx + 14, fl, vx + 10, vy - 6);
+    nose.closePath();
+    const port = new Path2D();
+    if (vOpen > 0.02) {
+      const pa = outer[vi - 1], pb = outer[vi + 1], mx = (pa[0] + pb[0]) / 2, my = (pa[1] + pb[1]) / 2, hw = 3 + 7 * vOpen;
+      port.moveTo(mx - hw, my + 4); port.lineTo(mx + hw, my + 4); port.lineTo(vx + 10 + hw * 0.4, vy - 12); port.lineTo(vx - 4 - hw * 0.4, vy - 12); port.closePath();
+    }
+    const c = [(outer[mi][0] + inner[mi + 1][0]) / 2, (outer[mi][1] + inner[mi + 1][1]) / 2];
+    const noseCol = `rgba(214,139,215,${0.22 + 0.63 * vOpen})`;
+    const P = 4, top = 4, bottom = 172, fadeA = 118;
+    for (let y = top; y < bottom; y += P) for (let x = 2; x < DW; x += P) {
+      let col;
+      if ((x - c[0]) ** 2 + (y - c[1]) ** 2 < 22) col = '#fff';
+      else if (hit.isPointInPath(air, x, y)) col = PURPLE_HI;
+      else if (hit.isPointInPath(port, x, y) || hit.isPointInPath(nose, x, y)) col = noseCol;
+      else if (hit.isPointInPath(tongue, x, y)) col = 'rgba(150,61,151,.78)';
+      else if (hit.isPointInPath(tissue, x, y)) col = 'rgba(200,200,212,.4)';
+      else { g.fillStyle = '#141418'; g.fillRect(x - 1.25, y - 1.25, 2.5, 2.5); continue; }
+      g.globalAlpha = y > fadeA ? Math.max(0.08, 1 - (y - fadeA) / (bottom - fadeA)) : 1;
+      g.fillStyle = col; g.fillRect(x - 1.25, y - 1.25, 2.5, 2.5);
+      g.globalAlpha = 1;
+    }
+    // straight view under it: one bar per section, glottis left, lips right, nose branch at the velum
+    const x0 = 24, x1 = 516, sy = 200, bw = (x1 - x0) / N, hmax = 20;
+    g.font = '8px Monaco, monospace'; g.fillStyle = LCDC; g.textAlign = 'left'; g.fillText('GLOTTIS', x0, 218); g.textAlign = 'right'; g.fillText('LIPS', x1, 218);
+    if (nasal > 1e-4) { const w = Math.max(1.5, 7 * vOpen), h = 4 + 8 * vOpen; g.fillStyle = 'rgba(214,139,215,.6)'; g.fillRect(x0 + vi * bw - w / 2, sy - hmax / 2 - h + 2, w, h); }
+    for (let i = 0; i < N; i++) { const h = Math.min(hmax, Math.max(1, d[i] * 5)); g.fillStyle = i === mi ? '#fff' : PURPLE_HI; g.globalAlpha = i === mi ? 1 : .85; g.fillRect(x0 + i * bw + .8, sy - h / 2, bw - 1.6, h); }
+    g.globalAlpha = 1;
+  }
+  function drawTract() {
+    fit(tractC);
+    const W = tractC.width, H = tractC.height, sc = Math.min(W / DW, H / DH);
+    if (viz && (viz !== tractFor || sc !== tractScale)) { renderTract(viz.d, viz.nasal, state.round || 0, sc); tractFor = viz; tractScale = sc; }
+    tx.setTransform(1, 0, 0, 1, 0, 0);
+    tx.clearRect(0, 0, W, H);
+    if (tractFor) tx.drawImage(tractBuf, Math.round((W - tractBuf.width) / 2), Math.round((H - tractBuf.height) / 2));
+  }
+
+  let fbuf = null;
+  function drawSpec() {
+    const d = fit(specC), W = specC.width, H = specC.height;
+    sx.clearRect(0, 0, W, H);
+    const fmin = 50, fmax = 16000, lx = f => Math.log(f / fmin) / Math.log(fmax / fmin) * W;
+    sx.strokeStyle = 'rgba(143,255,136,.08)'; sx.lineWidth = 1; sx.fillStyle = 'rgba(143,255,136,.45)'; sx.font = (9 * d) + 'px Monaco, monospace'; sx.textAlign = 'center';
+    for (const f of [100, 200, 500, 1000, 2000, 5000, 10000]) {
+      const x = lx(f); sx.beginPath(); sx.moveTo(x, 0); sx.lineTo(x, H); sx.stroke();
+      if (f === 100 || f === 1000 || f === 10000) sx.fillText(f >= 1000 ? (f / 1000) + 'k' : f, x, H - 4 * d);
+    }
+    if (analyser) {
+      if (!fbuf) fbuf = new Float32Array(analyser.frequencyBinCount);
+      analyser.getFloatFrequencyData(fbuf);
+      const binHz = ctx.sampleRate / analyser.fftSize, lo = analyser.minDecibels, hi = analyser.maxDecibels;
+      const y = v => H - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo) * (H - 14 * d) - 12 * d;
+      sx.beginPath(); sx.moveTo(0, H);
+      let px = -1;
+      for (let x = 0; x <= W; x += d) {
+        const f0 = fmin * Math.pow(fmax / fmin, x / W), f1 = fmin * Math.pow(fmax / fmin, (x + d) / W);
+        let b0 = Math.floor(f0 / binHz), b1 = Math.max(b0 + 1, Math.ceil(f1 / binHz)), m = -200;
+        for (let b = b0; b < b1 && b < fbuf.length; b++) m = Math.max(m, fbuf[b]);
+        sx.lineTo(x, y(m)); px = x;
+      }
+      sx.lineTo(px, H); sx.closePath();
+      const grd = sx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, 'rgba(150,61,151,.6)'); grd.addColorStop(1, 'rgba(150,61,151,.06)');
+      sx.fillStyle = grd; sx.fill();
+      sx.strokeStyle = PURPLE_HI; sx.lineWidth = 1.2 * d; sx.stroke();
+    }
+    if (!viz) return;
+    // the tract's own response (what the tube does to any input), scaled to sit in the top half
+    let mx = -1e9; for (let i = 0; i < NF; i++) if (FREQS[i] < 5000) mx = Math.max(mx, RESP[i]);
+    const ry = v => 20 * d + (mx - v) / 45 * (H * 0.7);
+    sx.strokeStyle = 'rgba(255,255,255,.75)'; sx.lineWidth = 1.2 * d; sx.setLineDash([4 * d, 3 * d]);
+    sx.beginPath();
+    for (let i = 0; i < NF && FREQS[i] < 7000; i++) { const x = lx(FREQS[i]), yv = Math.min(H, ry(RESP[i])); i ? sx.lineTo(x, yv) : sx.moveTo(x, yv); }
+    sx.stroke(); sx.setLineDash([]);
+    sx.fillStyle = 'rgba(143,255,136,.9)'; sx.textAlign = 'center';
+    formants.forEach((f, i) => {
+      const x = lx(f);
+      sx.strokeStyle = 'rgba(143,255,136,.35)'; sx.beginPath(); sx.moveTo(x, 18 * d); sx.lineTo(x, H - 16 * d); sx.stroke();
+      sx.fillText('F' + (i + 1), x, 14 * d);
+    });
+  }
+  const slow = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let last = 0;
+  function frame(t) {
+    if (!slow || t - last > 250) { last = t; drawTract(); drawSpec(); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
